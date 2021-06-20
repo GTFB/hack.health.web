@@ -197,6 +197,81 @@ class service_diagnostic_evaluationController extends ApiController
 
     // SQL_EDITORS_BEGIN - IMPORTANT: Don't remove this comment! Write your methods between these comments.
     
+
+    public function get_service_diagnostic_(ApiRequest $request)
+    {
+        $entity = Model::where('name', 'service_diagnostic_evaluation')->first()->altrp_sql_editors->where('name', 'get_service_diagnostic_')->first();
+
+        $res = selectForSQLEditor(
+        "SELECT 
+    `sde`.*,
+    `a`.`name`,
+    IF(`sde`.`complete` > 0, \"Выполнено\", \"Не выполнено\") as `complete`,
+    `s`.`name` as `service_name`
+FROM `hack_service_diagnostic_evaluations` as `sde`
+LEFT JOIN `hack_appeals` as `a`
+    ON `sde`.`appeal_id` = `a`.`id`
+LEFT JOIN `hack_service_diagnostics` AS `sd`
+    ON `sd`.`id` = `sde`.`service_diagnostic_id`
+LEFT JOIN `hack_services` AS `s`
+    ON `s`.`id` = `sd`.`service_id`
+WHERE `appeal_id` = " . request()->id . "",  [], [
+           'sql_name' => 'get_service_diagnostic_',
+           'table_name' => 'service_diagnostic_evaluations',
+         ], $request );
+
+
+
+        $res['data'] = $this->getRemoteData($entity, $res, $entity->is_object);
+
+        return response()->json( $res, 200, [], JSON_UNESCAPED_UNICODE );
+    }
+
+    public function get_service_diagnostic_complete(ApiRequest $request)
+    {
+        $entity = Model::where('name', 'service_diagnostic_evaluation')->first()->altrp_sql_editors->where('name', 'get_service_diagnostic_complete')->first();
+
+        $res = selectForSQLEditor(
+        "SELECT 
+    `sde`.`quantity` as `value`,
+    \"Выполненные услуги\" as `label`
+FROM `hack_service_diagnostic_evaluations` as `sde`
+LEFT JOIN `hack_appeals` as `a`
+    ON `sde`.`appeal_id` = `a`.`id`
+WHERE `appeal_id` = " . request()->id . " AND `sde`.`complete` = 1",  [], [
+           'sql_name' => 'get_service_diagnostic_complete',
+           'table_name' => 'service_diagnostic_evaluations',
+         ], $request );
+
+
+
+        $res['data'] = $this->getRemoteData($entity, $res, $entity->is_object);
+
+        return response()->json( $res, 200, [], JSON_UNESCAPED_UNICODE );
+    }
+
+    public function get_service_diag_incomplete(ApiRequest $request)
+    {
+        $entity = Model::where('name', 'service_diagnostic_evaluation')->first()->altrp_sql_editors->where('name', 'get_service_diag_incomplete')->first();
+
+        $res = selectForSQLEditor(
+        "SELECT 
+    `sde`.`quantity` as `value`,
+    \"Не выполненные услуги\" as `label`
+FROM `hack_service_diagnostic_evaluations` as `sde`
+LEFT JOIN `hack_appeals` as `a`
+    ON `sde`.`appeal_id` = `a`.`id`
+WHERE `appeal_id` = " . request()->id . " AND `sde`.`complete` = 0",  [], [
+           'sql_name' => 'get_service_diag_incomplete',
+           'table_name' => 'service_diagnostic_evaluations',
+         ], $request );
+
+
+
+        $res['data'] = $this->getRemoteData($entity, $res, $entity->is_object);
+
+        return response()->json( $res, 200, [], JSON_UNESCAPED_UNICODE );
+    }
     // SQL_EDITORS_END - IMPORTANT: Don't remove this comment! Write your methods between these comments.
 
     // CUSTOM_METHODS_BEGIN - IMPORTANT: Don't remove this comment! Write your methods between these comments.

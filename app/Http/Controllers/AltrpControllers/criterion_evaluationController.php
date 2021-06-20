@@ -203,9 +203,18 @@ class criterion_evaluationController extends ApiController
         $entity = Model::where('name', 'criterion_evaluation')->first()->altrp_sql_editors->where('name', 'get_criterion_evaluation')->first();
 
         $res = selectForSQLEditor(
-        "SELECT * FROM `hack_criterion_evaluations` as `e`
+        "SELECT 
+    `e`.*,
+    `a`.`name`,
+    IF(`e`.`complete` > 0, \"Выполнено\", \"Не выполнено\") as `complete`,
+    `qi`.`name` as `q_name`
+FROM `hack_criterion_evaluations` as `e`
 LEFT JOIN `hack_appeals` as `a`
     ON `e`.`appeal_id` = `a`.`id`
+LEFT JOIN `hack_criterion_lists` AS `cl`
+    ON `cl`.`id` = `e`.`criterion_list_id`
+LEFT JOIN `hack_quality_items` AS `qi`
+    ON `qi`.`id` = `cl`.`quality_item_id`
 WHERE `appeal_id` = " . request()->id . "",  [], [
            'sql_name' => 'get_criterion_evaluation',
            'table_name' => 'criterion_evaluations',

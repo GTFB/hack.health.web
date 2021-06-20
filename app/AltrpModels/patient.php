@@ -69,10 +69,23 @@ class patient extends Model
     // CUSTOM_PROPERTIES_END - IMPORTANT: Don't remove this comment! Write your properties between these comments.
 
     // ACCESSORS - IMPORTANT: Don't remove this comment!
-    
-    
-    
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = ['full_name'];
 
+    /**
+     * FullName accessor
+     * 
+     *
+     * @return mixed
+     */
+    public function getFullNameAttribute()
+    {
+        return $this->last_name." ".$this->first_name;
+    }
 
     // ACCESSORS - IMPORTANT: Don't remove this comment!
 

@@ -129,6 +129,9 @@ Route::delete('/service_kinds/{service_kind}', ['uses' =>'AltrpControllers\servi
 Route::put('/service_kinds/{service_kind}/{column}', ['uses' =>'AltrpControllers\service_kindController@updateColumn']);
 Route::get('/filters/service_kinds/{column}', ['uses' =>'AltrpControllers\service_kindController@getIndexedColumnsValueWithCount']);
 // Routes for the service_diagnostic_evaluations resource
+Route::get('/queries/service_diagnostic_evaluations/get_service_diag_incomplete', ['uses' => 'AltrpControllers\service_diagnostic_evaluationController@get_service_diag_incomplete']);
+Route::get('/queries/service_diagnostic_evaluations/get_service_diagnostic_complete', ['uses' => 'AltrpControllers\service_diagnostic_evaluationController@get_service_diagnostic_complete']);
+Route::get('/queries/service_diagnostic_evaluations/get_service_diagnostic_', ['uses' => 'AltrpControllers\service_diagnostic_evaluationController@get_service_diagnostic_']);
 Route::get('/service_diagnostic_evaluations', ['uses' =>'AltrpControllers\service_diagnostic_evaluationController@index']);
 Route::get('/service_diagnostic_evaluation_options', ['uses' =>'AltrpControllers\service_diagnostic_evaluationController@options']);
 Route::post('/service_diagnostic_evaluations', ['uses' =>'AltrpControllers\service_diagnostic_evaluationController@store']);
