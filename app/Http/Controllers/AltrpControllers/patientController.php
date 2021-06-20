@@ -1,0 +1,205 @@
+<?php
+
+namespace App\Http\Controllers\AltrpControllers;
+
+use App\Altrp\Model;
+use App\Altrp\Relationship;
+use App\Altrp\Builders\Traits\DynamicVariables;
+use App\Http\Controllers\ApiController;
+
+use App\AltrpModels\patient;
+use App\Http\Requests\ApiRequest;
+use App\Services\ChatService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Http\Requests\AltrpRequests\patientStoreRequest;
+use App\Http\Requests\AltrpRequests\patientUpdateRequest;
+// CUSTOM_NAMESPACES_BEGIN - IMPORTANT: Don't remove this comment! Write your namespaces between these comments.
+
+// CUSTOM_NAMESPACES_END - IMPORTANT: Don't remove this comment! Write your namespaces between these comments.
+
+class patientController extends ApiController
+{
+    use DynamicVariables;
+    // CUSTOM_TRAITS_BEGIN - IMPORTANT: Don't remove this comment! Write your traits between these comments.
+    
+    // CUSTOM_TRAITS_END - IMPORTANT: Don't remove this comment! Write your traits between these comments.
+
+    // CUSTOM_PROPERTIES_BEGIN - IMPORTANT: Don't remove this comment! Write your properties between these comments.
+    
+    // CUSTOM_PROPERTIES_END - IMPORTANT: Don't remove this comment! Write your properties between these comments.
+
+    /**
+     * patientController constructor.
+     */
+    public function __construct()
+    {
+        $this->modelClass = patient::class;
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param Request $request
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function store(patientStoreRequest $request)
+    {
+        $data = $request->all();
+        if ($fileInfo = $this->hasFileInRequest($request)) {
+            $medias = $this->saveMedias($request, $fileInfo['relation']);
+            foreach ($medias as $media) {
+                $data[$fileInfo['foreign_key']] = $media->id;
+            }
+        }
+
+        $patient = new patient;
+
+        $regChat = ChatService::registerInChat($patient->getTable(), $data);
+
+        $data = $this->hashPasswordAttributeIfExists($patient->getTable(), $data);
+
+        $patient->fill($data);
+
+        $res = $patient->save();
+        if($res){
+            return response()->json(['success'=>true, 'data'=>$patient], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        return response()->json(['success'=>false, 'message' => trans("responses.dberror")], 400, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param int $id
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function show($id)
+    {
+        $patient = patient::find($id);
+
+        if(! $patient) {
+            return response()->json(trans("responses.not_found.patient"), 404, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        $model = Model::where('name', 'patient')->first();
+        $relations = Relationship::where([['model_id',$model->id],['always_with',1]])->get()->implode('name',',');
+        $relations = $relations ? explode(',',$relations) : false;
+
+        if ($relations) {
+            $patient = $patient->load($relations);
+        }
+
+        $patient = $this->getRemoteData($model, $patient, true);
+
+        return response()->json($patient, 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function update(patientUpdateRequest $request, $id)
+    {
+        $data = $request->all();
+        if ($fileInfo = $this->hasFileInRequest($request)) {
+            $medias = $this->saveMedias($request, $fileInfo['relation']);
+            foreach ($medias as $media) {
+                $data[$fileInfo['foreign_key']] = $media->id;
+            }
+        }
+
+        $patient = patient::find($id);
+
+        if(! $patient) {
+            return response()->json(['success'=>false, 'message' => trans("responses.not_found.patient")], 404, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        $data = $this->hashPasswordAttributeIfExists($patient->getTable(), $data);
+
+        $result = $patient->update($data);
+
+        if($result){
+            return response()->json(['success'=>true], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        return response()->json(['success'=>false, 'message' => trans("responses.dberror")], 400, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param int $id
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function destroy($id)
+    {
+        $patient = patient::find($id);
+
+        if(! $patient) {
+            return response()->json(['success'=>false, 'message' => trans("responses.not_found.patient")], 404, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        $result = $patient->delete();
+
+        if($result) {
+            return response()->json(['success'=>true, 'message' => trans("responses.delete.patient")], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        return response()->json(['success'=>false, 'message' => trans("deleteerror")], 400, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Update column of resource from storage.
+     *
+     * @param ApiRequest $request
+     * @param $id
+     * @param $column
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateColumn(ApiRequest $request, $id, $column)
+    {
+        $patient = patient::find($id);
+
+        if(! $patient) {
+            return response()->json(['success'=>false, 'message' =>"patient not found"], 404, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        if (! isset($patient->$column)) {
+            return response()->json(['success'=>false, 'message'=>'Column not exists'], 400, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        $patient->$column = $request->column_value;
+
+        if ($patient->save()) {
+            return response()->json(['success'=>true], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        return response()->json('Failed to update', 400, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    public function getIndexedColumnsValueWithCount($column)
+    {
+        $patients = patient::selectRaw("$column as value, COUNT($column) as count")
+                            ->havingRaw("COUNT($column)")
+                            ->groupBy("$column")
+                            ->get();
+        return response()->json($patients, 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // SQL_EDITORS_BEGIN - IMPORTANT: Don't remove this comment! Write your methods between these comments.
+    
+    // SQL_EDITORS_END - IMPORTANT: Don't remove this comment! Write your methods between these comments.
+
+    // CUSTOM_METHODS_BEGIN - IMPORTANT: Don't remove this comment! Write your methods between these comments.
+    
+    // CUSTOM_METHODS_END - IMPORTANT: Don't remove this comment! Write your methods between these comments.
+}
